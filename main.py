@@ -42,7 +42,6 @@ async def article(newspaper: str, path: str, request: Request, json: bool = Fals
                 "name": crawler.name(),
                 "url": crawler.base_url(),
             },
-            "newspapers": newspapers_by_code(),
         })
 
     return templates.TemplateResponse("article.html", {
@@ -85,7 +84,6 @@ async def headlines(newspaper: str, request: Request, json: bool = False):
                 "name": crawler.name(),
                 "url": crawler.base_url(),
             },
-            "newspapers": newspapers_by_code(),
         })
 
     return templates.TemplateResponse("index.html", {
