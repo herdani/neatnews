@@ -22,11 +22,11 @@ def split_headlines_in_categories(headlines: [Headline]) -> [str, [Headline]]:
 
 
 @app.get("/{newspaper}/{path:path}", response_class=HTMLResponse)
-async def article(newspaper: str, path: str, request: Request, raw: bool = False):
+async def article(newspaper: str, path: str, request: Request, json: bool = False):
     crawler = crawler_by_code(newspaper)
     article = crawler.fetch_article(path)
 
-    if raw:
+    if json:
         return JSONResponse({
             'article': {
                 'title': article.title,
@@ -59,12 +59,12 @@ async def article(newspaper: str, path: str, request: Request, raw: bool = False
 
 
 @app.get("/{newspaper}", response_class=HTMLResponse, name="newspaper")
-async def headlines(newspaper: str, request: Request, raw: bool = False):
+async def headlines(newspaper: str, request: Request, json: bool = False):
     crawler = crawler_by_code(newspaper)
     headlines = crawler.fetch_headlines()
     headlines_in_categories = split_headlines_in_categories(headlines)
 
-    if raw:
+    if json:
         return JSONResponse({
             'headlines': [{
                 'title': h.title,
