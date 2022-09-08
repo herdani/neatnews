@@ -21,28 +21,53 @@ def split_headlines_in_categories(headlines: [Headline]) -> [str, [Headline]]:
     return split
 
 
-@app.get("/{newspaper}/{path:path}", response_class=HTMLResponse)
-async def article(newspaper: str, path: str, request: Request, json: bool = False):
+@app.get("/api/{newspaper}", response_class=JSONResponse, name="api-newspaper")
+async def api_headlines(newspaper: str):
+    crawler = crawler_by_code(newspaper)
+    headlines = crawler.fetch_headlines()
+
+    return JSONResponse({
+        'headlines': [{
+            'title': h.title,
+            'category': h.category,
+            'url': h.url,
+            'internal_url': h.internal_url,
+            'paywall': h.paywall,
+        } for h in headlines],
+        "newspaper": {
+            "name": crawler.name(),
+            "url": crawler.base_url(),
+        },
+    })
+
+
+@app.get("/api/{newspaper}/{path:path}", response_class=JSONResponse)
+async def api_article(newspaper: str, path: str):
     crawler = crawler_by_code(newspaper)
     article = crawler.fetch_article(path)
 
-    if json:
-        return JSONResponse({
-            'article': {
-                'title': article.title,
-                'summary': article.summary,
-                'img': article.img,
-                'url': article.url,
-                'paragraphs': article.paragraphs,
-                'published_on': article.published_on,
-                'updated_on': article.updated_on,
-                'see_also': article.see_also
-            },
-            "newspaper": {
-                "name": crawler.name(),
-                "url": crawler.base_url(),
-            },
-        })
+    return JSONResponse({
+        'article': {
+            'title': article.title,
+            'summary': article.summary,
+            'img': article.img,
+            'url': article.url,
+            'paragraphs': article.paragraphs,
+            'published_on': article.published_on,
+            'updated_on': article.updated_on,
+            'see_also': article.see_also
+        },
+        "newspaper": {
+            "name": crawler.name(),
+            "url": crawler.base_url(),
+        },
+    })
+
+
+@app.get("/{newspaper}/{path:path}", response_class=HTMLResponse)
+async def article(newspaper: str, path: str, request: Request):
+    crawler = crawler_by_code(newspaper)
+    article = crawler.fetch_article(path)
 
     return templates.TemplateResponse("article.html", {
         "request": request,
@@ -57,34 +82,10 @@ async def article(newspaper: str, path: str, request: Request, json: bool = Fals
 
 
 @app.get("/{newspaper}", response_class=HTMLResponse, name="newspaper")
-async def headlines(newspaper: str, request: Request, json: bool = False):
+async def headlines(newspaper: str, request: Request):
     crawler = crawler_by_code(newspaper)
     headlines = crawler.fetch_headlines()
     headlines_in_categories = split_headlines_in_categories(headlines)
-
-    if json:
-        return JSONResponse({
-            'headlines': [{
-                'title': h.title,
-                'category': h.category,
-                'url': h.url,
-                'internal_url': h.internal_url,
-                'paywall': h.paywall,
-            } for h in headlines],
-            'headlines_in_categories': [{
-                'category': category,
-                'headlines': [{
-                    'title': h.title,
-                    'url': h.url,
-                    'internal_url': h.internal_url,
-                    'paywall': h.paywall,
-                } for h in category_headlines],
-            } for (category, category_headlines) in headlines_in_categories],
-            "newspaper": {
-                "name": crawler.name(),
-                "url": crawler.base_url(),
-            },
-        })
 
     return templates.TemplateResponse("index.html", {
         "request": request,
